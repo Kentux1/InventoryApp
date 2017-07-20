@@ -3,6 +3,7 @@ package com.kentux.inventoryapp;
 import android.Manifest;
 import android.app.LoaderManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -48,6 +49,8 @@ import static android.os.Build.VERSION_CODES.M;
 
 public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    private Context context = this;
+
     private EditText mNameEditText;
 
     private EditText mSupplierEditText;
@@ -65,6 +68,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private String mProductSupplier;
 
     private int mProductQuantity;
+
+    private byte[] saveProductImage;
 
     private final static int SELECT_IMAGE = 100;
 
@@ -327,10 +332,14 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         String price = mPriceEditText.getText().toString().trim();
         String supplier = mSupplierEditText.getText().toString().trim();
         String quantity = mQuantityEditText.getText().toString().trim();
-        byte[] image = DbBitmapUtility.getBytes(mProductBitmap);
+        /*if (mProductBitmap == null) {
+            mProductBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.basket6_256);
+            saveProductImage = DbBitmapUtility.getBytes(mProductBitmap);
+        }*/
 
-        if (name.isEmpty() || price.isEmpty() || supplier.isEmpty() || quantity.isEmpty()) {
-            Toast.makeText(this, "There are missing fields to fill", Toast.LENGTH_SHORT).show();
+
+        if (mCurrentProductUri == null && name.isEmpty() && price.isEmpty() && supplier.isEmpty() && quantity.isEmpty() && saveProductImage == null) {
+            Toast.makeText(this, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -340,7 +349,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         values.put(ProductEntry.COLUMN_PRODUCT_PRICE, price);
         values.put(ProductEntry.COLUMN_PRODUCT_SUPPLIER, supplier);
         values.put(ProductEntry.COLUMN_PRODUCT_SALES, 0.0);
-        values.put(ProductEntry.COLUMN_PRODUCT_IMAGE, image);
+        values.put(ProductEntry.COLUMN_PRODUCT_IMAGE, saveProductImage);
 
         if (mCurrentProductUri == null) {
             Uri newUri = getContentResolver().insert(ProductEntry.CONTENT_URI, values);
