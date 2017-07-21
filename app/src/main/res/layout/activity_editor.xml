@@ -150,4 +150,13 @@
             android:textSize="18sp"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/order_from_supplier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:padding="12dp"
+        android:text="Order from supplier"
+        android:visibility="invisible"/>
 </LinearLayout>

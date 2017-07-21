@@ -4,11 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".CatalogActivity">
     <item
-        android:id="@+id/action_insert_dummy_data"
-        android:title="Insert Dummy Data"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_delete_all_products"
         android:title="Delete Products"
         app:showAsAction="never" />

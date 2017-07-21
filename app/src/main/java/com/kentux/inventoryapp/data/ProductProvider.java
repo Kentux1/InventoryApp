@@ -26,9 +26,9 @@ public class ProductProvider extends ContentProvider {
 
     private ProductDbHelper mDbHelper;
 
-    private static final int PRODUCTS = 1;
+    private static final int PRODUCTS = 100;
 
-    private static final int PRODUCT_ID = 2;
+    private static final int PRODUCT_ID = 200;
 
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
@@ -99,26 +99,6 @@ public class ProductProvider extends ContentProvider {
     private Uri insertProduct(Uri uri, ContentValues values) {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
-        String name = values.getAsString(ProductEntry.COLUMN_PRODUCT_NAME);
-        if (name == null) {
-            throw new IllegalArgumentException("Product requires a name");
-        }
-
-        Float price = values.getAsFloat(ProductEntry.COLUMN_PRODUCT_PRICE);
-        if (price != null && price < 0) {
-            throw new IllegalArgumentException("Product requires a valid stock");
-        }
-
-        String supplier = values.getAsString(ProductEntry.COLUMN_PRODUCT_SUPPLIER);
-        if (supplier == null) {
-            throw new IllegalArgumentException("Product requires a supplier");
-        }
-
-        byte[] image = values.getAsByteArray(ProductEntry.COLUMN_PRODUCT_IMAGE);
-        if (image == null) {
-            throw new IllegalArgumentException("Product requires an image");
-        }
-
         long id = db.insert(ProductEntry.TABLE_NAME, null, values);
 
         if (id == -1) {
@@ -173,27 +153,6 @@ public class ProductProvider extends ContentProvider {
     }
 
     private int updateProduct(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        if (values.containsKey(ProductEntry.COLUMN_PRODUCT_NAME)) {
-            String name = values.getAsString(ProductEntry.COLUMN_PRODUCT_NAME);
-            if (name == null) {
-                throw new IllegalArgumentException("Product requires a name");
-            }
-        }
-
-        if (values.containsKey(ProductEntry.COLUMN_PRODUCT_PRICE)) {
-            Float price = values.getAsFloat(ProductEntry.COLUMN_PRODUCT_PRICE);
-            if (price == null || price == 0) {
-                throw new IllegalArgumentException("Product requires a price");
-            }
-        }
-
-        if (values.containsKey(ProductEntry.COLUMN_PRODUCT_SUPPLIER)) {
-            String supplier = values.getAsString(ProductEntry.COLUMN_PRODUCT_SUPPLIER);
-            if (supplier == null) {
-                throw new IllegalArgumentException("Product requires a supplier");
-            }
-        }
-
         if (values.size() == 0) {
             return 0;
         }

@@ -14,9 +14,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
-import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NavUtils;
@@ -24,6 +21,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -36,20 +34,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.kentux.inventoryapp.data.DbBitmapUtility;
-import com.kentux.inventoryapp.data.ProductContract;
 import com.kentux.inventoryapp.data.ProductContract.ProductEntry;
 
-import java.io.File;
-import java.sql.Blob;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
-import static android.R.attr.canRetrieveWindowContent;
 import static android.R.attr.data;
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static android.os.Build.VERSION_CODES.M;
+import static com.kentux.inventoryapp.R.id.price;
 
 public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
-
-    private Context context = this;
 
     private EditText mNameEditText;
 
@@ -112,8 +107,22 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             invalidateOptionsMenu();
         } else {
             setTitle("Edit product");
+            Button mOrderButton = (Button) findViewById(R.id.order_from_supplier);
+            mOrderButton.setVisibility(View.VISIBLE);
+            mOrderButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(Intent.ACTION_SENDTO);
+                    intent.setData(Uri.parse("mailto"));
+                    intent.putExtra(Intent.EXTRA_SUBJECT, "Ordering stock for " + mProductName);
+                    if (intent.resolveActivity(getPackageManager()) != null) {
+                        startActivity(intent);
+                    }
+                }
+            });
             getLoaderManager().initLoader(EXISTING_PRODUCT_LOADER, null, this);
         }
+
 
         mNameEditText = (EditText) findViewById(R.id.name_edit_text);
         mSupplierEditText = (EditText) findViewById(R.id.supplier_edit_text);
@@ -150,21 +159,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mProductImageView = (ImageView) findViewById(R.id.image_view);
         mAddPhotoTextView = (TextView) findViewById(R.id.add_a_photo);
         mSelectImageView = (LinearLayout) findViewById(R.id.select_image_view);
-        mProductImageView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                mProductHasChanged = true;
-                mAddPhotoTextView.setVisibility(View.GONE);
-                return false;
-            }
-        });
-        mNameEditText.setOnTouchListener(mTouchListener);
-        mSupplierEditText.setOnTouchListener(mTouchListener);
-        mPriceEditText.setOnTouchListener(mTouchListener);
-        mQuantityEditText.setOnTouchListener(mTouchListener);
-        mSelectImageView.setOnTouchListener(mTouchListener);
-
-        mProductImageView.setOnClickListener(new View.OnClickListener() {
+        mSelectImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (Build.VERSION.SDK_INT >= M) {
@@ -180,20 +175,33 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 }
             }
         });
+        mNameEditText.setOnTouchListener(mTouchListener);
+        mSupplierEditText.setOnTouchListener(mTouchListener);
+        mPriceEditText.setOnTouchListener(mTouchListener);
+        mQuantityEditText.setOnTouchListener(mTouchListener);
+        mSelectImageView.setOnTouchListener(mTouchListener);
+
+
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        String[] projection = {
+                ProductEntry._ID,
+                ProductEntry.COLUMN_PRODUCT_NAME,
+                ProductEntry.COLUMN_PRODUCT_STOCK,
+                ProductEntry.COLUMN_PRODUCT_PRICE,
+                ProductEntry.COLUMN_PRODUCT_SUPPLIER,
+                ProductEntry.COLUMN_PRODUCT_SALES,
+                ProductEntry.COLUMN_PRODUCT_IMAGE};
         switch (id) {
             case EXISTING_PRODUCT_LOADER:
-                return new CursorLoader(
-                        this,
+                return new CursorLoader(this,
                         mCurrentProductUri,
+                        projection,
                         null,
                         null,
-                        null,
-                        null
-                );
+                        null);
             default:
                 return null;
         }
@@ -201,6 +209,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (data == null || data.getCount() < 1) {
+            return;
+        }
         if (data.moveToFirst()) {
             mProductName = data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME));
             mNameEditText.setText(mProductName);
@@ -209,9 +220,10 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             mPriceEditText.setText(data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_PRICE)));
             mProductQuantity = data.getInt(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_STOCK));
             mQuantityEditText.setText(String.valueOf(mProductQuantity));
-            mCurrentImageBytes = data.getBlob(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_IMAGE));
-            mProductBitmap = DbBitmapUtility.getImage(mCurrentImageBytes);
-            if (data.getBlob(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_IMAGE)) != null) {
+
+            byte[] bytesArray = data.getBlob(data.getColumnIndexOrThrow(ProductEntry.COLUMN_PRODUCT_IMAGE));
+            if (bytesArray != null) {
+                DbBitmapUtility.getImage(bytesArray);
                 mProductImageView.setImageBitmap(mProductBitmap);
             }
         }
@@ -221,6 +233,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     public void onLoaderReset(Loader<Cursor> loader) {
         mNameEditText.getText().clear();
         mQuantityEditText.setText("0");
+        mSupplierEditText.getText().clear();
+        mPriceEditText.setText("");
     }
 
 
@@ -256,8 +270,61 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = 4;
             mProductBitmap = BitmapFactory.decodeFile(imagePath, options);
-            mCurrentImageBytes = DbBitmapUtility.getBytes(mProductBitmap);
+            mProductBitmap = getBitmapFromUri(selectedImage);
             mProductImageView.setImageBitmap(mProductBitmap);
+        }
+    }
+
+    public Bitmap getBitmapFromUri(Uri uri) {
+
+        if (uri == null || uri.toString().isEmpty()) {
+            return null;
+        }
+
+        // Get the dimensions of the View
+        mProductImageView = (ImageView) findViewById(R.id.image_view);
+        int targetW = mProductImageView.getWidth();
+        int targetH = mProductImageView.getHeight();
+
+        InputStream input = null;
+        try {
+            input = this.getContentResolver().openInputStream(uri);
+
+            // Get the dimensions of the bitmap
+            BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+            bmOptions.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(input, null, bmOptions);
+            input.close();
+
+            int photoW = bmOptions.outWidth;
+            int photoH = bmOptions.outHeight;
+
+            // Determine how much to scale down the image
+            int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
+
+            // Decode the image file into a Bitmap sized to fill the View
+            bmOptions.inJustDecodeBounds = false;
+            bmOptions.inSampleSize = scaleFactor;
+            bmOptions.inPurgeable = true;
+
+            input = this.getContentResolver().openInputStream(uri);
+            Bitmap bitmap = BitmapFactory.decodeStream(input, null, bmOptions);
+            input.close();
+
+            return bitmap;
+
+        } catch (FileNotFoundException fne) {
+            Log.e("AddActivity", "Failed to load image.", fne);
+            return null;
+        } catch (Exception e) {
+            Log.e("AddActivity", "Failed to load image.", e);
+            return null;
+        } finally {
+            try {
+                input.close();
+            } catch (IOException ioe) {
+
+            }
         }
     }
 
@@ -283,8 +350,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             case R.id.action_save:
                 if (mProductHasChanged) {
                     saveProduct();
-                    finish();
-                    return true;
                 } else {
                     Toast.makeText(this, "Insertion or update of product has failed.", Toast.LENGTH_SHORT).show();
                 }
@@ -329,44 +394,58 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     private void saveProduct() {
         String name = mNameEditText.getText().toString().trim();
-        String price = mPriceEditText.getText().toString().trim();
+        String priceEditText = mPriceEditText.getText().toString().trim();
         String supplier = mSupplierEditText.getText().toString().trim();
         String quantity = mQuantityEditText.getText().toString().trim();
-        /*if (mProductBitmap == null) {
-            mProductBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.basket6_256);
-            saveProductImage = DbBitmapUtility.getBytes(mProductBitmap);
-        }*/
+        mProductQuantity = Integer.parseInt(mQuantityEditText.getText().toString().trim());
+        saveProductImage = DbBitmapUtility.getBytes(mProductBitmap);
 
+        boolean isNameEmpty = checkFieldEmpty(name);
+        boolean isPriceEmpty = checkFieldEmpty(priceEditText);
+        boolean isSupplierEmpty = checkFieldEmpty(supplier);
+        boolean isQuantityEmpty = checkFieldEmpty(quantity);
 
-        if (mCurrentProductUri == null && name.isEmpty() && price.isEmpty() && supplier.isEmpty() && quantity.isEmpty() && saveProductImage == null) {
-            Toast.makeText(this, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        ContentValues values = new ContentValues();
-        values.put(ProductEntry.COLUMN_PRODUCT_NAME, name);
-        values.put(ProductEntry.COLUMN_PRODUCT_STOCK, quantity);
-        values.put(ProductEntry.COLUMN_PRODUCT_PRICE, price);
-        values.put(ProductEntry.COLUMN_PRODUCT_SUPPLIER, supplier);
-        values.put(ProductEntry.COLUMN_PRODUCT_SALES, 0.0);
-        values.put(ProductEntry.COLUMN_PRODUCT_IMAGE, saveProductImage);
-
-        if (mCurrentProductUri == null) {
-            Uri newUri = getContentResolver().insert(ProductEntry.CONTENT_URI, values);
-
-            if (newUri == null) {
-                Toast.makeText(this, "Error while saving product", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Product saved", Toast.LENGTH_SHORT).show();
-            }
+        if (isNameEmpty) {
+            Toast.makeText(this, "Please input a valid product name", Toast.LENGTH_SHORT).show();
+        } else if (isSupplierEmpty) {
+            Toast.makeText(this, "Plese input a valid product supplier", Toast.LENGTH_SHORT).show();
+        } else if (isPriceEmpty) {
+            Toast.makeText(this, "Please input a valid product price", Toast.LENGTH_SHORT).show();
+        } else if (mProductQuantity <= 0 || isQuantityEmpty) {
+            Toast.makeText(this, "Please input a valid product quantity", Toast.LENGTH_SHORT).show();
+        } else if (mProductBitmap == null) {
+            Toast.makeText(this, "Please input a valid product image", Toast.LENGTH_SHORT).show();
         } else {
-            int rowsAffected = getContentResolver().update(mCurrentProductUri, values, null, null);
+            ContentValues values = new ContentValues();
+            values.put(ProductEntry.COLUMN_PRODUCT_NAME, name);
+            values.put(ProductEntry.COLUMN_PRODUCT_STOCK, mProductQuantity);
+            values.put(ProductEntry.COLUMN_PRODUCT_PRICE, price);
+            values.put(ProductEntry.COLUMN_PRODUCT_SUPPLIER, supplier);
+            values.put(ProductEntry.COLUMN_PRODUCT_SALES, 0.0);
 
-            if (rowsAffected == 0) {
-                Toast.makeText(this, "Error while updating product", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Product updated", Toast.LENGTH_SHORT).show();
+            if (mProductBitmap != null) {
+                DbBitmapUtility.getBytes(mProductBitmap);
+                values.put(ProductEntry.COLUMN_PRODUCT_IMAGE, saveProductImage);
             }
+
+            if (mCurrentProductUri == null) {
+                Uri newUri = getContentResolver().insert(ProductEntry.CONTENT_URI, values);
+
+                if (newUri == null) {
+                    Toast.makeText(this, "Error while saving product", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Product saved", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                int rowsAffected = getContentResolver().update(mCurrentProductUri, values, null, null);
+
+                if (rowsAffected == 0) {
+                    Toast.makeText(this, "Error while updating product", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Product updated", Toast.LENGTH_SHORT).show();
+                }
+            }
+            finish();
         }
     }
 
@@ -418,5 +497,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    private boolean checkFieldEmpty(String string) {
+        return TextUtils.isEmpty(string) || string.equals(".");
     }
 }

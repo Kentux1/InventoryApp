@@ -19,12 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.kentux.inventoryapp.data.DbBitmapUtility;
-import com.kentux.inventoryapp.data.ProductContract;
+
 import com.kentux.inventoryapp.data.ProductContract.ProductEntry;
 
 import static android.R.attr.id;
-import static android.R.attr.inset;
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.L;
 import static com.kentux.inventoryapp.R.id.price;
 
 /**
@@ -32,6 +30,7 @@ import static com.kentux.inventoryapp.R.id.price;
  */
 
 public class ProductCursorAdapter extends CursorAdapter {
+    Context mContext;
 
     public static final String LOG_TAG = ProductCursorAdapter.class.getName();
 
@@ -59,8 +58,12 @@ public class ProductCursorAdapter extends CursorAdapter {
         int quantityColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_STOCK);
         int salesColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_SALES);
 
-        int id = cursor.getInt(cursor.getColumnIndex(ProductEntry._ID));
         byte[] productImageRaw = cursor.getBlob(imageColumnIndex);
+        if (productImageRaw != null) {
+            Bitmap bitmap = DbBitmapUtility.getImage(productImageRaw);
+            productImageView.setImageBitmap(bitmap);
+        }
+
         final String productName = cursor.getString(nameColumnIndex);
         final double productPrice = cursor.getDouble(priceColumnIndex);
         String productPriceText = "Price: " + String.valueOf(productPrice) + "€";
@@ -69,10 +72,9 @@ public class ProductCursorAdapter extends CursorAdapter {
         final double sales = cursor.getFloat(salesColumnIndex);
         String salesText = "Sales: " + sales + " €";
 
-        final Uri currentProductUri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI, id);
+        final Uri currentProductUri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI,
+                cursor.getInt(cursor.getColumnIndexOrThrow(ProductEntry._ID)));
 
-        Bitmap productImage = DbBitmapUtility.getImage(productImageRaw);
-        productImageView.setImageBitmap(productImage);
         nameTextView.setText(productName);
         priceTextView.setText(productPriceText);
         quantityTextView.setText(inStock);
