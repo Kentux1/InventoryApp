@@ -396,8 +396,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         String priceEditText = mPriceEditText.getText().toString().trim();
         String supplier = mSupplierEditText.getText().toString().trim();
         String quantity = mQuantityEditText.getText().toString().trim();
-        mProductQuantity = Integer.parseInt(mQuantityEditText.getText().toString().trim());
-        double mProductPrice = Double.parseDouble(mPriceEditText.getText().toString().trim());
+        mProductQuantity = Integer.parseInt(quantity);
 
         boolean isNameEmpty = checkFieldEmpty(name);
         boolean isPriceEmpty = checkFieldEmpty(priceEditText);
@@ -408,7 +407,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             Toast.makeText(this, "Please input a valid product name", Toast.LENGTH_SHORT).show();
         } else if (isSupplierEmpty) {
             Toast.makeText(this, "Plese input a valid product supplier", Toast.LENGTH_SHORT).show();
-        } else if (isPriceEmpty || mProductPrice <= 0) {
+        } else if (isPriceEmpty) {
             Toast.makeText(this, "Please input a valid product price", Toast.LENGTH_SHORT).show();
         } else if (mProductQuantity < 0 || isQuantityEmpty) {
             Toast.makeText(this, "Please input a valid product quantity", Toast.LENGTH_SHORT).show();

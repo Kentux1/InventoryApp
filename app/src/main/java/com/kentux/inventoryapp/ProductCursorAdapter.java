@@ -29,7 +29,7 @@ class ProductCursorAdapter extends CursorAdapter {
 
     private static final String LOG_TAG = ProductCursorAdapter.class.getName();
 
-    private ProductCursorAdapter(Context context, Cursor c) {
+    ProductCursorAdapter(Context context, Cursor c) {
         super(context, c, 0);
     }
 
