@@ -5,10 +5,6 @@ import android.graphics.BitmapFactory;
 
 import java.io.ByteArrayOutputStream;
 
-/**
- * Created by Tiago Gomes on 18/07/2017.
- */
-
 public class DbBitmapUtility {
     public static byte[] getBytes(Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();

@@ -157,6 +157,5 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:padding="12dp"
-        android:text="Order from supplier"
-        android:visibility="invisible"/>
+        android:text="Order from supplier"/>
 </LinearLayout>

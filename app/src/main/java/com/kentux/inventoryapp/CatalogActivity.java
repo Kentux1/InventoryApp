@@ -2,7 +2,6 @@ package com.kentux.inventoryapp;
 
 import android.app.LoaderManager;
 import android.content.ContentUris;
-import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.database.Cursor;
@@ -18,10 +17,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-
 import com.kentux.inventoryapp.data.ProductContract.ProductEntry;
-
-import static android.R.attr.data;
 
 public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
     private static final int PRODUCT_LOADER = 0;

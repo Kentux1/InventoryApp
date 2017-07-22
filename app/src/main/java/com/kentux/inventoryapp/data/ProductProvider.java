@@ -9,17 +9,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.StringDef;
 import android.util.Log;
 
-import com.kentux.inventoryapp.data.ProductContract;
 import com.kentux.inventoryapp.data.ProductContract.ProductEntry;
-
-import static android.R.attr.id;
-
-/**
- * Created by Tiago Gomes on 14/07/2017.
- */
 
 public class ProductProvider extends ContentProvider {
     public static final String LOG_TAG = ProductProvider.class.getSimpleName();
@@ -66,7 +58,9 @@ public class ProductProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
-        cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        if (getContext() != null) {
+            cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        }
         return cursor;
     }
 
@@ -105,8 +99,9 @@ public class ProductProvider extends ContentProvider {
             Log.e(LOG_TAG, "Failed to insert row for " + uri);
             return null;
         }
-        getContext().getContentResolver().notifyChange(uri, null);
-
+        if (getContext() != null) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return ContentUris.withAppendedId(uri, id);
     }
 
@@ -119,7 +114,9 @@ public class ProductProvider extends ContentProvider {
             case PRODUCTS:
                 rowsDeleted = database.delete(ProductEntry.TABLE_NAME, selection, selectionArgs);
                 if (rowsDeleted != 0) {
-                    getContext().getContentResolver().notifyChange(uri, null);
+                    if (getContext() != null) {
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                 }
                 return rowsDeleted;
             case PRODUCT_ID:
@@ -127,7 +124,9 @@ public class ProductProvider extends ContentProvider {
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
                 rowsDeleted = database.delete(ProductEntry.TABLE_NAME, selection, selectionArgs);
                 if (rowsDeleted != 0) {
-                    getContext().getContentResolver().notifyChange(uri, null);
+                    if (getContext() != null) {
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                 }
                 return rowsDeleted;
             default:
@@ -140,10 +139,14 @@ public class ProductProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case PRODUCTS:
-                getContext().getContentResolver().notifyChange(uri, null);
+                if (getContext() != null) {
+                    getContext().getContentResolver().notifyChange(uri, null);
+                }
                 return updateProduct(uri, values, selection, selectionArgs);
             case PRODUCT_ID:
-                getContext().getContentResolver().notifyChange(uri, null);
+                if (getContext() != null) {
+                    getContext().getContentResolver().notifyChange(uri, null);
+                }
                 selection = ProductEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
                 return updateProduct(uri, values, selection, selectionArgs);
@@ -160,7 +163,9 @@ public class ProductProvider extends ContentProvider {
 
         int rowsUpdated = database.update(ProductEntry.TABLE_NAME, values, selection, selectionArgs);
         if (rowsUpdated != 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
+            if (getContext() != null) {
+                getContext().getContentResolver().notifyChange(uri, null);
+            }
         }
 
         return rowsUpdated;

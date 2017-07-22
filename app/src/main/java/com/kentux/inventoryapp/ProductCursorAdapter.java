@@ -6,7 +6,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,19 +21,15 @@ import com.kentux.inventoryapp.data.DbBitmapUtility;
 
 import com.kentux.inventoryapp.data.ProductContract.ProductEntry;
 
-import static android.R.attr.id;
+import java.text.NumberFormat;
+
 import static com.kentux.inventoryapp.R.id.price;
 
-/**
- * Created by Tiago Gomes on 17/07/2017.
- */
+class ProductCursorAdapter extends CursorAdapter {
 
-public class ProductCursorAdapter extends CursorAdapter {
-    Context mContext;
+    private static final String LOG_TAG = ProductCursorAdapter.class.getName();
 
-    public static final String LOG_TAG = ProductCursorAdapter.class.getName();
-
-    public ProductCursorAdapter(Context context, Cursor c) {
+    private ProductCursorAdapter(Context context, Cursor c) {
         super(context, c, 0);
     }
 
@@ -52,7 +47,7 @@ public class ProductCursorAdapter extends CursorAdapter {
         TextView salesTextView = (TextView) view.findViewById(R.id.sales);
         Button sellButton = (Button) view.findViewById(R.id.sell_button);
 
-        int imageColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_IMAGE);
+        int imageColumnIndex = cursor.getColumnIndexOrThrow(ProductEntry.COLUMN_PRODUCT_IMAGE);
         int nameColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME);
         int priceColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_PRICE);
         int quantityColumnIndex = cursor.getColumnIndex(ProductEntry.COLUMN_PRODUCT_STOCK);
@@ -70,7 +65,10 @@ public class ProductCursorAdapter extends CursorAdapter {
         final int quantity = cursor.getInt(quantityColumnIndex);
         String inStock = "In stock: " + quantity;
         final double sales = cursor.getFloat(salesColumnIndex);
-        String salesText = "Sales: " + sales + " €";
+
+        NumberFormat salesFormat = NumberFormat.getCurrencyInstance();
+        String result = salesFormat.format(sales);
+        String salesText = "Sales: " + result;
 
         final Uri currentProductUri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI,
                 cursor.getInt(cursor.getColumnIndexOrThrow(ProductEntry._ID)));
@@ -87,8 +85,7 @@ public class ProductCursorAdapter extends CursorAdapter {
                 ContentValues values = new ContentValues();
                 if (quantity > 0) {
                     int stock = quantity;
-                    double price = productPrice;
-                    double salesTotal = sales + price;
+                    double salesTotal = sales + productPrice;
                     values.put(ProductEntry.COLUMN_PRODUCT_STOCK, --stock);
                     values.put(ProductEntry.COLUMN_PRODUCT_SALES, salesTotal);
                     resolver.update(
@@ -98,7 +95,7 @@ public class ProductCursorAdapter extends CursorAdapter {
                             null
                     );
                     context.getContentResolver().notifyChange(currentProductUri, null);
-                    Log.v(LOG_TAG, "Quantity: " + quantity + ", Sales: " + sales);
+                    Log.v(LOG_TAG, "Quantity: " + stock + ", Sales: " + sales);
 
                 } else {
                     Toast.makeText(context, "You can't sale anymore because there's no stock available", Toast.LENGTH_SHORT).show();
