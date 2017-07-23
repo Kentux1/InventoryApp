@@ -52,6 +52,10 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     private EditText mQuantityEditText;
 
+    private String mProductName;
+
+    private String mProductSupplier;
+
     private int mProductQuantity;
 
     private final static int SELECT_IMAGE = 100;
@@ -85,27 +89,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         Intent intent = getIntent();
         mCurrentProductUri = intent.getData();
-        Button mOrderButton = (Button) findViewById(R.id.order_from_supplier);
-        if (mCurrentProductUri == null) {
-            setTitle("Add new product");
-            invalidateOptionsMenu();
-            mOrderButton.setVisibility(View.INVISIBLE);
-        } else {
-            setTitle("Edit product");
-            mAddPhotoTextView = (TextView) findViewById(R.id.add_a_photo);
-            mAddPhotoTextView.setVisibility(View.GONE);
-            mOrderButton.setVisibility(View.VISIBLE);
-            mOrderButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(Intent.ACTION_SEND);
-                    intent.setData(Uri.parse("mailto:"));
-                    intent.setType("text/plain");
-                    startActivity(Intent.createChooser(intent, "Send Mail..."));
-                }
-            });
-            getLoaderManager().initLoader(EXISTING_PRODUCT_LOADER, null, this);
-        }
+
 
 
         mNameEditText = (EditText) findViewById(R.id.name_edit_text);
@@ -160,6 +144,36 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 mAddPhotoTextView.setVisibility(View.INVISIBLE);
             }
         });
+
+        mPriceEditText.setFilters(new InputFilter[] {
+                new DecimalInputFilter(5,2)
+        });
+
+        Button mOrderButton = (Button) findViewById(R.id.order_from_supplier);
+        if (mCurrentProductUri == null) {
+            setTitle("Add new product");
+            invalidateOptionsMenu();
+            mOrderButton.setVisibility(View.INVISIBLE);
+        } else {
+            setTitle("Edit product");
+            mAddPhotoTextView = (TextView) findViewById(R.id.add_a_photo);
+            mAddPhotoTextView.setVisibility(View.GONE);
+            mOrderButton.setVisibility(View.VISIBLE);
+            mOrderButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String emailText = "Product name: " + mProductName +
+                            "\n" + "Supplier name: " + mProductSupplier +
+                            "\n" + "Quantity required:";
+                    Intent intent = new Intent(Intent.ACTION_SENDTO);
+                    intent.setData(Uri.parse("mailto:"));
+                    intent.putExtra(Intent.EXTRA_SUBJECT, "Supply order for " + mProductName);
+                    intent.putExtra(Intent.EXTRA_TEXT, emailText);
+                    startActivity(Intent.createChooser(intent, "Send Mail..."));
+                }
+            });
+            getLoaderManager().initLoader(EXISTING_PRODUCT_LOADER, null, this);
+        }
         mNameEditText.setOnTouchListener(mTouchListener);
         mSupplierEditText.setOnTouchListener(mTouchListener);
         mPriceEditText.setOnTouchListener(mTouchListener);
@@ -169,9 +183,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mDecreaseButton.setOnTouchListener(mTouchListener);
         mOrderButton.setOnTouchListener(mTouchListener);
 
-        mPriceEditText.setFilters(new InputFilter[] {
-                new DecimalInputFilter(100,2)
-        });
     }
 
     @Override
@@ -204,9 +215,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             return;
         }
         if (data.moveToFirst()) {
-            String mProductName = data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME));
+            mProductName = data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_NAME));
             mNameEditText.setText(mProductName);
-            String mProductSupplier = data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_SUPPLIER));
+            mProductSupplier = data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_SUPPLIER));
             mSupplierEditText.setText(mProductSupplier);
             mPriceEditText.setText(data.getString(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_PRICE)));
             mProductQuantity = data.getInt(data.getColumnIndex(ProductEntry.COLUMN_PRODUCT_STOCK));
